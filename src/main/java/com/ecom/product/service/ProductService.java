@@ -1,18 +1,26 @@
 package com.ecom.product.service;
 
+import com.ecom.commons.ExceptionHandler.DuplicateResourceFoundException;
+import com.ecom.commons.ExceptionHandler.ResourceNotFoundException;
+import com.ecom.product.dto.Category;
 import com.ecom.product.dto.Product;
 import com.ecom.product.repository.ProductRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 @Service
+@Slf4j
 public class ProductService {
     private final ProductRepository productRepository;
-    private Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+
+    @Autowired
+    private CategoryService categoryService;
 
     @Autowired
     public ProductService(ProductRepository productRepository) {
@@ -21,115 +29,119 @@ public class ProductService {
 
 
     public List<Product> getAllProducts() {
-        logger.log(Level.INFO, "Entering get all products method in product service");
-        try {
-            List<Product> products = productRepository.findAll();
-            if (products.isEmpty()) {
-                throw new Exception("No products in the inventory");
-            }
-            logger.log(Level.INFO, "Exiting get all products method in product service");
-            return products;
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Exception occurred while getting all products: " + e.getMessage());
+        log.info("Entering get all products method in product service");
+        List<Product> products = productRepository.findAll();
+        if (products.isEmpty()) {
+            throw new ResourceNotFoundException("No products in the inventory", 404);
         }
-        logger.log(Level.INFO, "Exiting get all products method in product service");
-        return Collections.<Product>emptyList();
+        log.info("Exiting get all products method in product service");
+        return products;
     }
 
-    public Boolean addProduct(Product product) {
-        logger.log(Level.INFO, "Entering add product method in product service");
-        try {
-            if (productRepository.findProductById(product.getId()).isPresent()) {
-                throw new Exception("Product already present");
+    public void addProduct(Product product) {
+        log.info("Entering add product method in product service");
+        if (productRepository.findProductById(product.getId()).isPresent()) {
+            throw new DuplicateResourceFoundException("Product already present", 409);
+        } else {
+            String categoryId = categoryService.getCategoryIdByName(product.getCategoryId());
+            if (!categoryId.isBlank()) {
+                product.setCategoryId(categoryId);
+                productRepository.save(product);
             } else {
-                if (validateCategory(product.getCategory())) {
-                    productRepository.save(product);
-                } else {
-                    throw new Exception("Product Category does not exist");
-                }
-                logger.log(Level.INFO, "Exiting add product method in product service");
-                return true;
+                throw new ResourceNotFoundException("Product Category does not exist", 404);
             }
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Exception occurred while adding product: " + e.getMessage());
+            log.info("Exiting add product method in product service");
+        }
+    }
+
+    public Page<Product> getFilteredProducts(Double min, Double max, Integer pageNumber,
+                                             Integer pageSize, String sortBy, Boolean ascending,
+                                             String category, String serachBy){
+        log.info("Entering filter product method in product service");
+        Pageable pageable;
+        if(null != sortBy && !sortBy.isBlank()) {
+            pageable = PageRequest.of(pageNumber,pageSize,ascending? Sort.Direction.ASC: Sort.Direction.DESC,sortBy);
+        } else {
+            pageable = PageRequest.of(pageNumber,pageSize);
         }
 
-        logger.log(Level.INFO, "Exiting add product method in product service");
-        return false;
+        String categoryId = categoryService.getCategoryIdByName(category);
+
+        Page<Product> products = productRepository.getFilteredProducts(min,max,pageable,categoryId,serachBy);
+        if (!products.isEmpty()){
+            log.info("Exiting filter product method in product service");
+            return products;
+        } else {
+            throw new ResourceNotFoundException("No products found with specified filters",404);
+        }
+
     }
 
     public List<Product> getProductsWithSpecifiedName(String name) {
-        logger.log(Level.INFO, "Entering get all products with specified name method in product service");
+        log.info("Entering get all products with specified name method in product service");
         Optional<List<Product>> products = productRepository.getProductsByName(name);
         try {
             if (products.isPresent()) {
-                logger.log(Level.INFO, "Exiting get all products with specified name method in product service");
+                log.info("Exiting get all products with specified name method in product service");
                 return products.get();
             } else {
                 throw new Exception("No products with specified name exist");
             }
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Exception occurred while searching for products by name");
+            log.error("Exception occurred while searching for products by name");
         }
-        logger.log(Level.INFO, "Exiting get all products with specified name method in product service");
+        log.info("Exiting get all products with specified name method in product service");
         return Collections.<Product>emptyList();
     }
 
     public List<Product> getProductsWithinARange(Double min, Double max) {
-        logger.log(Level.INFO, "Entering get products within a specified range method in product service");
+        log.info("Entering get products within a specified range method in product service");
         Optional<List<Product>> products = productRepository.getProductsWithinARange(min, max);
         try {
             if (products.isPresent()) {
-                logger.log(Level.INFO, "Exiting get products within a specified range method in product service");
+                log.info("Exiting get products within a specified range method in product service");
                 return products.get();
             } else {
                 throw new Exception("No products found within this range");
             }
 
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Exception occurred while filtering products within a range: " + e.getMessage());
+            log.error("Exception occurred while filtering products within a range: " + e.getMessage());
         }
 
-        logger.log(Level.INFO, "Exiting get products within a specified range method in product service");
+        log.info("Exiting get products within a specified range method in product service");
         return Collections.<Product>emptyList();
     }
 
     public List<Product> getSortedProducts(String sortBy, Boolean ascending) {
-        logger.log(Level.INFO, "Entering get sorted products method in product service");
+        log.info("Entering get sorted products method in product service");
         Optional<List<Product>> products = productRepository.sortWithParameter(sortBy, ascending ? 1 : -1);
         try {
             if (products.isPresent()) {
-                logger.log(Level.INFO, "Exiting get sorted products method in product service");
+                log.info("Exiting get sorted products method in product service");
                 return products.get();
             } else {
                 throw new Exception("No products in inventory");
             }
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "exception occurred while sorting for products: " + e.getMessage());
+            log.error("exception occurred while sorting for products: " + e.getMessage());
         }
-        logger.log(Level.INFO, "Exiting get sorted products method in product service");
+        log.info("Exiting get sorted products method in product service");
         return Collections.<Product>emptyList();
     }
 
-    public boolean deleteProduct(String id) {
-        logger.log(Level.INFO, "Entering delete product method in product service");
-        try {
+    public void deleteProduct(String id) {
+        log.info("Entering delete product method in product service");
             if (productRepository.findProductById(id).isPresent()) {
                 productRepository.deleteById(id);
-                logger.log(Level.INFO, "Exiting delete product method in product service");
-                return true;
+                log.info("Exiting delete product method in product service");
             } else {
-                throw new Exception("No product found");
+                throw new ResourceNotFoundException("No product found",404);
             }
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Exception occurred while deleting product: " + e.getMessage());
-        }
-        logger.log(Level.INFO, "Exiting delete product method in product service");
-        return false;
     }
 
     public boolean validateCategory(String category) {
-        logger.log(Level.INFO, "Entering validate category method in product service");
+        log.info("Entering validate category method in product service");
 
         Set<String> categories = new HashSet<>();
         categories.add("Smartphones");
@@ -139,83 +151,67 @@ public class ProductService {
         categories.add("Televisions");
         categories.add("Wearables");
 
-        logger.log(Level.INFO, "Exiting validate category method in product service");
+        log.info("Exiting validate category method in product service");
         return categories.contains(category);
     }
 
     public List<Product> getProductsByCategory(String category) {
-        logger.log(Level.INFO, "Entering get product by category method in product service");
+        log.info("Entering get product by category method in product service");
         try {
             Optional<List<Product>> products = productRepository.getProductsByCategory(category);
             if (products.isPresent()) {
-                logger.log(Level.INFO, "Exiting get product by category method in product service");
+                log.info("Exiting get product by category method in product service");
                 return products.get();
             } else {
                 throw new Exception("No products in this category");
             }
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Exception occurred while fetching products of a category: " + e.getMessage());
+            log.error("Exception occurred while fetching products of a category: " + e.getMessage());
         }
 
-        logger.log(Level.INFO, "Exiting get product by category method in product service");
+        log.info("Exiting get product by category method in product service");
         return Collections.<Product>emptyList();
     }
 
     public Product getProductById(String productId) {
-        logger.log(Level.INFO, "Entering get product by id method in product service");
-        try {
-            Optional<Product> product = productRepository.findProductById(productId);
-            if (product.isPresent()) {
-                logger.log(Level.INFO, "Exiting get product by id method in product service");
-                return product.get();
-            } else {
-                throw new Exception("No product found with specified id");
-            }
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, "Exception occurred while retrieving product by id: " + e.getMessage());
+        log.info("Entering get product by id method in product service");
+        Optional<Product> product = productRepository.findProductById(productId);
+        if (product.isPresent()) {
+            log.info("Exiting get product by id method in product service");
+            product.get().setCategoryId(categoryService.getCategoryNameById(product.get().getCategoryId()));
+            return product.get();
+        } else {
+            throw new ResourceNotFoundException("No product found with specified id", 404);
         }
-        logger.log(Level.INFO, "Exiting get product by id method in product service");
-        return null;
     }
 
-    public boolean addReview(String productId,String review) {
-        logger.log(Level.INFO,"Entering add review method in product services");
-        try{
-            Optional<Product> product = productRepository.findProductById(productId);
-            if(product.isPresent()){
-                if(product.get().getReviews()==null){
-                    product.get().setReviews(new ArrayList<String>());
-                }
-
-                product.get().getReviews().add(review);
-
-                productRepository.save(product.get());
-                logger.log(Level.INFO,"Exiting add review method in product services");
-                return true;
-            }else{
-                throw new Exception("Product not found");
+    public void addReview(String productId, String review) {
+        log.info("Entering add review method in product services");
+        Optional<Product> product = productRepository.findProductById(productId);
+        if (product.isPresent()) {
+            if (product.get().getReviews() == null) {
+                product.get().setReviews(new ArrayList<String>());
             }
-        }catch (Exception e){
-            logger.log(Level.SEVERE,"Exception occurred while adding review for a product: "+e.getMessage());
+
+            product.get().getReviews().add(review);
+
+            productRepository.save(product.get());
+            log.info("Exiting add review method in product services");
+        } else {
+            throw new ResourceNotFoundException("Product not found", 404);
         }
-        logger.log(Level.INFO,"Exiting add review method in product services");
-        return false;
     }
 
     public List<Product> getFeaturedProducts() {
-        logger.log(Level.INFO,"Entering get featured products method in product services");
-        try{
-            Optional<List<Product>> products = productRepository.getFeaturedProducts();
-            if(products.isPresent()){
-                logger.log(Level.INFO,"Exiting get featured products method in product services");
-                return products.get();
-            }else{
-                throw new Exception("No products found");
-            }
-        }catch(Exception e){
-            logger.log(Level.SEVERE,"Exception occurred while fetching featured products: "+e.getMessage());
+        log.info("Entering get featured products method in product services");
+        Optional<List<Product>> products = productRepository.getFeaturedProducts();
+        if (products.isPresent()) {
+            log.info("Exiting get featured products method in product services");
+            return products.get();
+        } else {
+            throw new ResourceNotFoundException("No products found", 404);
         }
-        logger.log(Level.INFO,"Exiting get featured products method in product services");
-        return Collections.<Product>emptyList();
     }
+
+
 }

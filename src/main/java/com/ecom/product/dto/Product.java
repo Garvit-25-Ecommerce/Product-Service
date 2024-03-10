@@ -1,105 +1,44 @@
 package com.ecom.product.dto;
 
 import com.mongodb.lang.NonNull;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Positive;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
 
 @Document("Products")
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class Product {
 
     @Id
     private String id;
     @NonNull
+    @NotBlank(message = "Name field cannot be blank")
     private String name;
     @NonNull
+    @NotBlank(message = "Brand field cannot be blank")
     private String brand;
     @NonNull
+    @Positive(message = "Price cannot be zero or negative")
     private Double price;
     @NonNull
-    private String category;
+    @NotBlank(message = "Category cannot be blank")
+    private String categoryId;
 
     private URL imageUrl;
     private Map<String, String> features;
     private ArrayList<String> reviews;
-
-    public Product(@NonNull String name, @NonNull String brand, @NonNull Double price, @NonNull String category, URL imageUrl, Map<String, String> features) {
-        this.name = name;
-        this.brand = brand;
-        this.price = price;
-        this.category = category;
-        this.imageUrl = imageUrl;
-        this.features = features;
-
-    }
-
-    public ArrayList<String> getReviews() {
-        return reviews;
-    }
-
-    public void setReviews(ArrayList<String> reviews) {
-        this.reviews = reviews;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    @NonNull
-    public String getCategory() {
-        return category;
-    }
-
-    public void setCategory(@NonNull String category) {
-        this.category = category;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getBrand() {
-        return brand;
-    }
-
-    public void setBrand(String brand) {
-        this.brand = brand;
-    }
-
-    public Double getPrice() {
-        return price;
-    }
-
-    public void setPrice(Double price) {
-        this.price = price;
-    }
-
-    public URL getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(URL imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
-    public Map<String, String> getFeatures() {
-        return features;
-    }
-
-    public void setFeatures(Map<String, String> features) {
-        this.features = features;
-    }
 
     @Override
     public String toString() {
