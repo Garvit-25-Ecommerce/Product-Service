@@ -1,24 +1,27 @@
 package com.ecom.product.controller;
 
 import com.ecom.commons.Dto.CustomResponse;
+import com.ecom.commons.ExceptionHandler.CustomizedResponseEntityExceptionHandler;
 import com.ecom.commons.ExceptionHandler.ResourceNotFoundException;
+import com.ecom.product.dto.FilterProductsRequest;
 import com.ecom.product.dto.Product;
 import com.ecom.product.service.CategoryService;
 import com.ecom.product.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Positive;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.util.*;
 
 @RestController
 @CrossOrigin(origins = {"http://localhost:3000"})
 @RequestMapping(path = "/product")
+@Import({CustomizedResponseEntityExceptionHandler.class})
 public class ProductController {
     private final ProductService productService;
 
@@ -44,7 +47,7 @@ public class ProductController {
         }
     }
 
-    @GetMapping("/byId/{productId}")
+    @GetMapping("/{productId}")
     public ResponseEntity<Map<String, Object>> getProductById(@PathVariable @NotBlank String productId) {
         Map<String, Object> response = new HashMap<>();
         Product product = productService.getProductById(productId);
@@ -58,102 +61,20 @@ public class ProductController {
         }
     }
 
-    @GetMapping("/{name}")
-    public ResponseEntity<Map<String, Object>> getProductsWithSpecifiedName(@PathVariable @NotBlank String name) {
-        Map<String, Object> response = new HashMap<>();
-        List<Product> products = productService.getProductsWithSpecifiedName(name);
-        if (!products.isEmpty()) {
-            response.put("data", products);
-            response.put("message", "success");
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } else {
-            response.put("data", Collections.<Product>emptyList());
-            throw new ResourceNotFoundException("No products with specified name found", 404);
-        }
-    }
-
     //TODO create endpoint for dynamic categories and one for getting filtered products using aggregation
-    @GetMapping("/filteredProducts")
-    public ResponseEntity<Map<String, Object>> getFilteredProducts(@RequestParam(value = "min") Optional<Double> min,
-                                                                   @RequestParam(value = "max") Optional<Double> max,
-                                                                   @RequestParam(value = "ascending") Optional<Boolean> ascending,
-                                                                   @RequestParam(value = "sortBy") Optional<String> sortBy,
-                                                                   @RequestParam(value = "searchBy") Optional<String> searchBy,
-                                                                   @RequestParam(value = "pageNumber") Optional<Integer> pageNumber,
-                                                                   @RequestParam(value = "pageSize") Optional<Integer> pageSize,
-                                                                   @RequestParam(value = "category") Optional<String> category) {
+    @PostMapping("/filtered-products")
+    public ResponseEntity<Map<String, Object>> getFilteredProducts(@RequestBody @Valid FilterProductsRequest filterProductsRequest) {
         Map<String, Object> response = new HashMap<>();
-        Page<Product> products = productService.getFilteredProducts(min.orElse(0d),
-                max.orElse(Double.MAX_VALUE), pageNumber.orElse(0), pageSize.orElse(10), sortBy.orElse(""),
-                ascending.orElse(true), category.orElse(""), searchBy.orElse(""));
+        Page<Product> products = productService.getFilteredProducts(filterProductsRequest.getMin(),
+                filterProductsRequest.getMax(), filterProductsRequest.getPageNumber(), filterProductsRequest.getPageSize(),
+                filterProductsRequest.getSortBy(), filterProductsRequest.getAscending(), filterProductsRequest.getCategory(),
+                filterProductsRequest.getSearchBy());
         response.put("data", products);
         response.put("message", "success");
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @GetMapping
-    public ResponseEntity<Map<String, Object>> getProductsWithinARange(@RequestParam(value = "min") Optional<Double> min, @RequestParam(value = "max") Optional<Double> max) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            List<Product> products = productService.getProductsWithinARange(min.orElse(0.0), max.orElse(Double.MAX_VALUE));
-            if (!products.isEmpty()) {
-                response.put("data", products);
-                response.put("message", "success");
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            } else {
-                response.put("data", Collections.<Product>emptyList());
-                throw new Exception("No products found within the specified range");
-            }
-        } catch (Exception e) {
-            response.put("message", e.getMessage());
-            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
-        }
-    }
-
-    @GetMapping("/sortedProducts")
-    public ResponseEntity<Map<String, Object>> getSortedProducts(@RequestParam(value = "ascending") Boolean ascending, @RequestParam(value = "sortBy") String sortBy) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            List<Product> products = productService.getSortedProducts(sortBy, ascending);
-            if (!products.isEmpty()) {
-                response.put("data", products);
-                response.put("message", "success");
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            } else {
-                response.put("data", Collections.<Product>emptyList());
-                throw new Exception("No products found");
-            }
-        } catch (Exception e) {
-            response.put("message", e.getMessage());
-            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
-        }
-    }
-
-    @GetMapping("/byCategory")
-    public ResponseEntity<Map<String, Object>> getProductsByCategory(@RequestParam(value = "category") String category) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            if (!productService.validateCategory(category)) {
-                throw new Exception("Entered category is not valid");
-            }
-
-            List<Product> products = productService.getProductsByCategory(category);
-
-            if (!products.isEmpty()) {
-                response.put("data", products);
-                response.put("message", "success");
-                return new ResponseEntity<>(response, HttpStatus.OK);
-            } else {
-                response.put("data", Collections.<Product>emptyList());
-                throw new Exception("No products found in the specified category");
-            }
-        } catch (Exception e) {
-            response.put("message", e.getMessage());
-            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
-        }
-    }
-
-    @GetMapping(path = "/featuredProducts")
+    @GetMapping(path = "/featured-products")
     public ResponseEntity<Map<String, Object>> getFeaturedProducts() {
         Map<String, Object> response = new HashMap<>();
         List<Product> products = productService.getFeaturedProducts();
@@ -167,7 +88,7 @@ public class ProductController {
         }
     }
 
-    @PostMapping(path = "/addReview")
+    @PostMapping(path = "/add-review")
     public ResponseEntity<CustomResponse> addReview(@RequestParam(value = "productId") @NotBlank String productId, @RequestBody Map<String, String> body) {
         if (!body.containsKey("review")) {
             return new ResponseEntity<>(new CustomResponse(false, "Review not added"), HttpStatus.BAD_REQUEST);
@@ -185,6 +106,16 @@ public class ProductController {
         productService.addProduct(product);
         return new ResponseEntity<>(new CustomResponse(true, "Product added successfully"), HttpStatus.CREATED);
 
+    }
+
+    @PutMapping(path = "/update/{id}")
+    public ResponseEntity<CustomResponse> updateProduct(@RequestBody @Valid Product product,@PathVariable @NotBlank String id, @RequestParam(value = "isAdmin") Boolean isAdmin) {
+        if (null == isAdmin || !isAdmin) {
+            return new ResponseEntity<>(new CustomResponse(false, "You don't have the privileges to update this product"), HttpStatus.FORBIDDEN);
+        }
+
+        productService.updateProduct(product, id);
+        return new ResponseEntity<>(new CustomResponse(true, "Product updated successfully"), HttpStatus.CREATED);
     }
 
     @DeleteMapping(path = "/delete/{id}")

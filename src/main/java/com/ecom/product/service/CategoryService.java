@@ -15,9 +15,12 @@ public class CategoryService {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    private final Integer RESOURCE_NOT_FOUND = 404;
+    private final Integer CONFLICT = 409;
+
     public void addCategory(Category category) {
         if (categoryRepository.findByName(category.getName()).isPresent()) {
-            throw new DuplicateResourceFoundException("Category with same name already exists",409);
+            throw new DuplicateResourceFoundException("Category with same name already exists",CONFLICT);
         }
 
         categoryRepository.save(category);
@@ -25,9 +28,8 @@ public class CategoryService {
 
     public List<Category> getCategories() {
         List<Category> categories = categoryRepository.findAll();
-
-        if(null == categories && categories.isEmpty()){
-            throw new ResourceNotFoundException("No categories found",404);
+        if(categories.isEmpty()){
+            throw new ResourceNotFoundException("No categories found",RESOURCE_NOT_FOUND);
         }
 
         return categories;
@@ -43,9 +45,6 @@ public class CategoryService {
 
     public String getCategoryNameById (String id) {
         Optional<Category> category = categoryRepository.findById(id);
-        if(category.isPresent()) {
-            return category.get().getName();
-        }
-        return "";
+        return category.map(Category::getName).orElse("");
     }
 }

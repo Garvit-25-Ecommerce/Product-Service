@@ -1,6 +1,7 @@
 package com.ecom.product.dto;
 
 import com.mongodb.lang.NonNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,8 +9,8 @@ import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Positive;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
@@ -35,6 +36,8 @@ public class Product {
     @NonNull
     @NotBlank(message = "Category cannot be blank")
     private String categoryId;
+    @PositiveOrZero(message = "Quantity cannot be negative")
+    private Integer quantity = 1;
 
     private URL imageUrl;
     private Map<String, String> features;
