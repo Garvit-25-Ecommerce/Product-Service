@@ -5,7 +5,6 @@ import com.ecom.commons.ExceptionHandler.CustomizedResponseEntityExceptionHandle
 import com.ecom.commons.ExceptionHandler.ResourceNotFoundException;
 import com.ecom.product.dto.FilterProductsRequest;
 import com.ecom.product.dto.Product;
-import com.ecom.product.service.CategoryService;
 import com.ecom.product.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -24,9 +23,6 @@ import java.util.*;
 @Import({CustomizedResponseEntityExceptionHandler.class})
 public class ProductController {
     private final ProductService productService;
-
-    @Autowired
-    private CategoryService categoryService;
 
     @Autowired
     public ProductController(ProductService productService) {
@@ -61,7 +57,6 @@ public class ProductController {
         }
     }
 
-    //TODO create endpoint for dynamic categories and one for getting filtered products using aggregation
     @PostMapping("/filtered-products")
     public ResponseEntity<Map<String, Object>> getFilteredProducts(@RequestBody @Valid FilterProductsRequest filterProductsRequest) {
         Map<String, Object> response = new HashMap<>();
@@ -98,8 +93,8 @@ public class ProductController {
     }
 
     @PostMapping(path = "/add")
-    public ResponseEntity<CustomResponse> addProduct(@RequestBody @Valid Product product, @RequestParam(value = "isAdmin") Optional<Boolean> isAdmin) throws Exception {
-        if (!isAdmin.isPresent() || !isAdmin.get()) {
+    public ResponseEntity<CustomResponse> addProduct(@RequestBody @Valid Product product, @RequestParam(value = "isAdmin", required = false) Boolean isAdmin) {
+        if (null == isAdmin || !isAdmin) {
             return new ResponseEntity<>(new CustomResponse(false, "You don't have the privileges to add product"), HttpStatus.FORBIDDEN);
         }
 
@@ -119,9 +114,9 @@ public class ProductController {
     }
 
     @DeleteMapping(path = "/delete/{id}")
-    public ResponseEntity<CustomResponse> deleteProduct(@PathVariable String id, @RequestParam("isAdmin") Optional<Boolean> isAdmin) {
-        if (!isAdmin.isPresent() || !isAdmin.get()) {
-            return new ResponseEntity<>(new CustomResponse(false, "You donot have the priveleges to delete product"), HttpStatus.FORBIDDEN);
+    public ResponseEntity<CustomResponse> deleteProduct(@PathVariable String id, @RequestParam(value = "isAdmin", required = false) Boolean isAdmin) {
+        if (null == isAdmin || !isAdmin) {
+            return new ResponseEntity<>(new CustomResponse(false, "You don't have the privileges to delete product"), HttpStatus.FORBIDDEN);
         }
         productService.deleteProduct(id);
         return new ResponseEntity<>(new CustomResponse(true, "Product deleted successfully"), HttpStatus.OK);

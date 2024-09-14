@@ -3,6 +3,7 @@ package com.ecom.product.controller;
 import com.ecom.commons.Dto.CustomResponse;
 import com.ecom.product.dto.Category;
 import com.ecom.product.service.CategoryService;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +29,12 @@ public class CategoryController {
     public ResponseEntity<List<Category>> getCategories(){
         List<Category> categories = categoryService.getCategories();
         return new ResponseEntity<>(categories,HttpStatus.OK);
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<CustomResponse> deleteCategory (@PathVariable(name = "id") @NotBlank String id) {
+        categoryService.deleteCategory(id);
+        return  new ResponseEntity<>(new CustomResponse(true,"Category deleted successfully"), HttpStatus.OK);
     }
 
 }

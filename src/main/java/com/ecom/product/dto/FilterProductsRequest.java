@@ -1,12 +1,10 @@
 package com.ecom.product.dto;
 
-import lombok.Builder;
 import lombok.Data;
-import org.apache.catalina.util.StringUtil;
-import org.springframework.boot.context.properties.bind.DefaultValue;
-import org.springframework.util.StringUtils;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class FilterProductsRequest {
     Double min = Double.MIN_VALUE;
     Double max = Double.MAX_VALUE;

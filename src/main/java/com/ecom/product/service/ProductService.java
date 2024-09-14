@@ -4,6 +4,7 @@ import com.ecom.commons.ExceptionHandler.DuplicateResourceFoundException;
 import com.ecom.commons.ExceptionHandler.ResourceNotFoundException;
 import com.ecom.product.dto.Category;
 import com.ecom.product.dto.Product;
+import com.ecom.product.helper.Constants;
 import com.ecom.product.repository.ProductRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+
+import static com.ecom.product.helper.Constants.CONFLICT;
+import static com.ecom.product.helper.Constants.RESOURCE_NOT_FOUND;
+
 @Service
 @Slf4j
 public class ProductService {
@@ -27,10 +32,6 @@ public class ProductService {
         this.productRepository = productRepository;
         this.categoryService = categoryService;
     }
-
-    private final Integer RESOURCE_NOT_FOUND = 404;
-    private final Integer CONFLICT = 409;
-
 
     public List<Product> getAllProducts() {
         log.info("ProductService :: getAllProducts :: start");
