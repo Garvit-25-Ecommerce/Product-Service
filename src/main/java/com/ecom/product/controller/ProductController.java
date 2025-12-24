@@ -4,8 +4,12 @@ import com.ecom.commons.Dto.CustomResponse;
 import com.ecom.commons.ExceptionHandler.CustomizedResponseEntityExceptionHandler;
 import com.ecom.commons.ExceptionHandler.ResourceNotFoundException;
 import com.ecom.product.dto.FilterProductsRequest;
-import com.ecom.product.dto.Product;
+import com.ecom.product.dto.ProductDto;
+import com.ecom.product.dto.ProductRequest;
+import com.ecom.product.dto.ReviewRequest;
 import com.ecom.product.service.ProductService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
@@ -13,9 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import java.util.*;
+import java.util.List;
 
 @RestController
 @CrossOrigin(origins = {"http://localhost:3000"})
@@ -30,70 +32,52 @@ public class ProductController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<Map<String, Object>> getAllProducts() {
-        Map<String, Object> response = new HashMap<>();
-        List<Product> products = productService.getAllProducts();
+    public ResponseEntity<List<ProductDto>> getAllProducts() {
+        List<ProductDto> products = productService.getAllProducts();
         if (!products.isEmpty()) {
-            response.put("data", products);
-            response.put("message", "success");
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return new ResponseEntity<>(products, HttpStatus.OK);
         } else {
-            response.put("data", Collections.<Product>emptyList());
             throw new ResourceNotFoundException("No products found", 404);
         }
     }
 
     @GetMapping("/{productId}")
-    public ResponseEntity<Map<String, Object>> getProductById(@PathVariable @NotBlank String productId) {
-        Map<String, Object> response = new HashMap<>();
-        Product product = productService.getProductById(productId);
+    public ResponseEntity<ProductDto> getProductById(@PathVariable @NotBlank String productId) {
+        ProductDto product = productService.getProductById(productId);
         if (product != null) {
-            response.put("data", product);
-            response.put("message", "Success");
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return new ResponseEntity<>(product, HttpStatus.OK);
         } else {
-            response.put("data", null);
             throw new ResourceNotFoundException("No product found with specified id", 404);
         }
     }
 
     @PostMapping("/filtered-products")
-    public ResponseEntity<Map<String, Object>> getFilteredProducts(@RequestBody @Valid FilterProductsRequest filterProductsRequest) {
-        Map<String, Object> response = new HashMap<>();
-        Page<Product> products = productService.getFilteredProducts(filterProductsRequest.getMin(),
+    public ResponseEntity<Page<ProductDto>> getFilteredProducts(@RequestBody @Valid FilterProductsRequest filterProductsRequest) {
+        Page<ProductDto> products = productService.getFilteredProducts(filterProductsRequest.getMin(),
                 filterProductsRequest.getMax(), filterProductsRequest.getPageNumber(), filterProductsRequest.getPageSize(),
                 filterProductsRequest.getSortBy(), filterProductsRequest.getAscending(), filterProductsRequest.getCategory(),
                 filterProductsRequest.getSearchBy());
-        response.put("data", products);
-        response.put("message", "success");
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return new ResponseEntity<>(products, HttpStatus.OK);
     }
 
     @GetMapping(path = "/featured-products")
-    public ResponseEntity<Map<String, Object>> getFeaturedProducts() {
-        Map<String, Object> response = new HashMap<>();
-        List<Product> products = productService.getFeaturedProducts();
+    public ResponseEntity<List<ProductDto>> getFeaturedProducts() {
+        List<ProductDto> products = productService.getFeaturedProducts();
         if (!products.isEmpty()) {
-            response.put("data", products);
-            response.put("message", "success");
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return new ResponseEntity<>(products, HttpStatus.OK);
         } else {
-            response.put("data", null);
             throw new ResourceNotFoundException("No products found", 404);
         }
     }
 
     @PostMapping(path = "/add-review")
-    public ResponseEntity<CustomResponse> addReview(@RequestParam(value = "productId") @NotBlank String productId, @RequestBody Map<String, String> body) {
-        if (!body.containsKey("review")) {
-            return new ResponseEntity<>(new CustomResponse(false, "Review not added"), HttpStatus.BAD_REQUEST);
-        }
-        productService.addReview(productId, body.get("review"));
+    public ResponseEntity<CustomResponse> addReview(@RequestParam(value = "productId") @NotBlank String productId, @RequestBody @Valid ReviewRequest reviewRequest) {
+        productService.addReview(productId, reviewRequest);
         return new ResponseEntity<>(new CustomResponse(true, "Review added Successfully"), HttpStatus.OK);
     }
 
     @PostMapping(path = "/add")
-    public ResponseEntity<CustomResponse> addProduct(@RequestBody @Valid Product product, @RequestParam(value = "isAdmin", required = false) Boolean isAdmin) {
+    public ResponseEntity<CustomResponse> addProduct(@RequestBody @Valid ProductRequest product, @RequestParam(value = "isAdmin", required = false) Boolean isAdmin) {
         if (null == isAdmin || !isAdmin) {
             return new ResponseEntity<>(new CustomResponse(false, "You don't have the privileges to add product"), HttpStatus.FORBIDDEN);
         }
@@ -104,12 +88,11 @@ public class ProductController {
     }
 
     @PutMapping(path = "/update/{id}")
-    public ResponseEntity<CustomResponse> updateProduct(@RequestBody @Valid Product product,@PathVariable @NotBlank String id, @RequestParam(value = "isAdmin") Boolean isAdmin) {
+    public ResponseEntity<CustomResponse> updateProduct(@RequestBody @Valid ProductRequest productRequest,@PathVariable @NotBlank String id, @RequestParam(value = "isAdmin") Boolean isAdmin) {
         if (null == isAdmin || !isAdmin) {
             return new ResponseEntity<>(new CustomResponse(false, "You don't have the privileges to update this product"), HttpStatus.FORBIDDEN);
         }
-
-        productService.updateProduct(product, id);
+        productService.updateProduct(productRequest, id);
         return new ResponseEntity<>(new CustomResponse(true, "Product updated successfully"), HttpStatus.CREATED);
     }
 

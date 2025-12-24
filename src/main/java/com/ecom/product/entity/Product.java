@@ -1,5 +1,6 @@
-package com.ecom.product.dto;
+package com.ecom.product.entity;
 
+import com.ecom.product.dto.Feature;
 import com.mongodb.lang.NonNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
@@ -13,7 +14,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.List;
 
 @Document("Products")
 @Getter
@@ -40,7 +41,7 @@ public class Product {
     private Integer quantity = 1;
 
     private URL imageUrl;
-    private Map<String, String> features;
+    private List<Feature> features;
     private ArrayList<String> reviews;
 
     @Override

@@ -1,6 +1,6 @@
 package com.ecom.product.repository;
 
-import com.ecom.product.dto.Product;
+import com.ecom.product.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

@@ -2,7 +2,7 @@ package com.ecom.product.service;
 
 import com.ecom.commons.ExceptionHandler.DuplicateResourceFoundException;
 import com.ecom.commons.ExceptionHandler.ResourceNotFoundException;
-import com.ecom.product.dto.Category;
+import com.ecom.product.entity.Category;
 import com.ecom.product.repository.CategoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

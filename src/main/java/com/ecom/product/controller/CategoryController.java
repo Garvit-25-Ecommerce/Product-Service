@@ -1,7 +1,7 @@
 package com.ecom.product.controller;
 
 import com.ecom.commons.Dto.CustomResponse;
-import com.ecom.product.dto.Category;
+import com.ecom.product.entity.Category;
 import com.ecom.product.service.CategoryService;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.beans.factory.annotation.Autowired;

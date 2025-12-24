@@ -1,6 +1,6 @@
 package com.ecom.product.repository;
 
-import com.ecom.product.dto.Category;
+import com.ecom.product.entity.Category;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
