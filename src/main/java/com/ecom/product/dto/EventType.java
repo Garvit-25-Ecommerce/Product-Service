@@ -1,0 +1,7 @@
+package com.ecom.product.dto;
+
+public enum EventType {
+    PRODUCT_CREATED,
+    PRODUCT_UPDATED,
+    PRODUCT_DELETED
+}

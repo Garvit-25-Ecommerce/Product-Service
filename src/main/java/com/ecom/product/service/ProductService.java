@@ -1,9 +1,7 @@
 package com.ecom.product.service;
 
 import com.ecom.commons.ExceptionHandler.ResourceNotFoundException;
-import com.ecom.product.dto.ProductDto;
-import com.ecom.product.dto.ProductRequest;
-import com.ecom.product.dto.ReviewRequest;
+import com.ecom.product.dto.*;
 import com.ecom.product.entity.Product;
 import com.ecom.product.mapper.ProductMapper;
 import com.ecom.product.repository.ProductRepository;
@@ -15,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +32,9 @@ public class ProductService {
     @Autowired
     private ProductMapper productMapper;
 
+    @Autowired
+    private ProductEventPublisher eventPublisher;
+
     public List<ProductDto> getAllProducts() {
         log.info("ProductService :: getAllProducts :: start");
         List<Product> products = productRepository.findAll();
@@ -50,7 +52,8 @@ public class ProductService {
         if (!categoryId.isBlank()) {
             Product productEntity = productMapper.toEntityFromRequest(product);
             productEntity.setCategoryId(categoryId);
-            productRepository.save(productEntity);
+            Product saved = productRepository.save(productEntity);
+            eventPublisher.publish(toEvent(saved, EventType.PRODUCT_CREATED));
         } else {
             throw new ResourceNotFoundException("Product Category does not exist", RESOURCE_NOT_FOUND);
         }
@@ -143,11 +146,24 @@ public class ProductService {
                 Product productEntity = productMapper.toEntityFromRequest(product);
                 productEntity.setCategoryId(categoryId);
                 productEntity.setId(id);
-                productRepository.save(productEntity);
+                Product saved = productRepository.save(productEntity);
+                eventPublisher.publish(toEvent(saved, EventType.PRODUCT_UPDATED));
             } else {
                 throw new ResourceNotFoundException("Product Category does not exist", RESOURCE_NOT_FOUND);
             }
             log.info("ProductService :: updateProduct :: end");
         }
+    }
+
+    private ProductEvent toEvent(Product product, EventType type) {
+        return new ProductEvent(
+                type,
+                product.getId(),
+                product.getName(),
+                product.getBrand(),
+                categoryService.getCategoryNameById(product.getCategoryId()),
+                product.getFeatures(),
+                Instant.now()
+        );
     }
 }
